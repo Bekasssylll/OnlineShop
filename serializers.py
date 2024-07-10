@@ -1,10 +1,13 @@
 from rest_framework import serializers
-from .models import Product, Cart, CartItem, Review
+from .models import Product, Cart, CartItem, Review, Order, OrderItem
+
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Product #работаем с моделью Product
-        fields = "__all__" #все филдс сериализуються
+        model = Product  # работаем с моделью Product
+        fields = "__all__"  # все филдс сериализуються
+        # lookup_field = 'slug'
+
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = serializers.SlugRelatedField(slug_field='name', queryset=Product.objects.all())
@@ -13,12 +16,14 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = ['id', 'product', 'quantity', 'created_at', 'updated_at']
 
+
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Cart
         fields = ['id', 'user', 'items', 'created_at', 'updated_at']
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,3 +46,17 @@ class ReviewSerializer(serializers.ModelSerializer):
         instance.rating = validated_data.get('rating', instance.rating)
         instance.save()
         return instance
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    order = serializers.PrimaryKeyRelatedField(queryset=Order.objects.all())
+
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'order', 'product', 'quantity']
