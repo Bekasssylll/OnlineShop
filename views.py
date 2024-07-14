@@ -4,11 +4,107 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
-
+from rest_framework.views import APIView
+from rest_framework import mixins,generics
 from .models import Product, Cart, CartItem, Review, Order, OrderItem
 from .serializers import ProductSerializer, CartSerializer, CartItemSerializer, ReviewSerializer, OrderSerializer, \
     OrderItemSerializer
 from .filters import ProductFilter
+
+"""здесь то как работает request.query_params.get("значение которое ишем",None)"""
+
+
+class ExampleAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        param1 = request.query_params.get('param1', None)
+        if param1:
+            return Response({"param1": f"param is {param1}"})
+        else:
+            return Response({'message': "Not have"})
+
+
+"""То как работает request.user и зачем он нужен"""
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        data = {
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }
+        return Response(data)
+
+
+""".auth нужен для того чтобы получить токен"""
+
+
+class ExampleView2(APIView):
+    def get(self, request, *args, **kwargs):
+        if request.auth:
+            return Response({'token': f'{request.auth}'})
+        else:
+            return Response({'message': "lox"})
+
+
+""".authenticators для проверки прошли мы аутентификацию или нет"""
+"""это по идее можно обыграть ,что то в этом стиле ,типа:"""
+"""работа с request.stream"""
+
+# class RawDataView(APIView):
+#     def post(self, request, *args, **kwargs):
+#         # Чтение данных из request.stream
+#         raw_data = request.stream.read()
+#
+#         # Обработка данных (например, если это JSON)
+#         import json
+#         try:
+#             data = json.loads(raw_data)
+#         except json.JSONDecodeError:
+#             return Response({"error": "Invalid JSON"}, status=400)
+#
+#         # Далее можно обрабатывать данные как обычно
+#         return Response(data, status=201)
+
+"""RESPONSE и все ,что с ним связано"""
+"""методы Response- .data,."""
+
+
+# class DetailedResponseView(APIView):
+#     def get(self, request, *args, **kwargs):
+#         data = {"message": "Hello, World!"}
+#         response = Response(data=data, status=status.HTTP_200_OK)
+#
+#         # Пример использования атрибутов
+#         # response.template_name = 'example_template.html'
+#         # response.render()  # Преобразует response.data в response.content
+#
+#         # print("Content:", response.content)
+#         print("Status Code:", response.status_code)
+#         # print("Accepted Renderer:", response.accepted_renderer)
+#         # print("Accepted Media Type:", response.accepted_media_type)
+#         # print("Renderer Context:", response.renderer_context)
+#
+#         return response
+
+"""работа с миксинами и так сказать копаться в грязном белье"""
+class SampleView(mixins.ListModelMixin,
+                 mixins.CreateModelMixin,
+                 mixins.UpdateModelMixin,
+                 generics.GenericAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    def get(self,request,*args,**kwargs):
+        return self.list(request,*args,*kwargs)
+    def post(self,request,*args,**kwargs):
+        return self.create(request,*args,**kwargs)
+    def put(self,request,*args,**kwargs):
+        return self.update(request,*args,**kwargs)
+
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -110,7 +206,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
 
 
 #     def create(self, request, *args, **kwargs):
