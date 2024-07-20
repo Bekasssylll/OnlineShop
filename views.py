@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter, SearchFilter
@@ -12,7 +13,6 @@ from .serializers import ProductSerializer, CartSerializer, CartItemSerializer, 
 from .filters import ProductFilter
 
 """здесь то как работает request.query_params.get("значение которое ишем",None)"""
-
 
 class ExampleAPIView(APIView):
     def get(self, request, *args, **kwargs):
@@ -38,6 +38,15 @@ class UserProfileView(APIView):
             'last_name': user.last_name,
         }
         return Response(data)
+
+
+
+"""создаем свой класс пагинаций"""
+class ProductPagination(PageNumberPagination):
+    page_size = 3
+    page_size_query_param = 'page_size'
+    max_page_size = 10000
+
 
 
 """.auth нужен для того чтобы получить токен"""
@@ -111,6 +120,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = ProductPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ['name', "price"]
